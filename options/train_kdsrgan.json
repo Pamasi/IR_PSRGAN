@@ -1,10 +1,10 @@
 {
   "task": "0529msrresnet_gan_kd_x2_s4_for nc128 le-4 IR 20000" //
   , "model": "gan" // "gan"
-  , "gpu_ids": [1]
+  , "gpu_ids": [0]
 
   , "scale": 2       // broadcast to "netG" if SISR
-  , "n_channels": 3  // broadcast to "datasets", 1 for grayscale, 3 for color
+  , "n_channels": 1  // broadcast to "datasets", 1 for grayscale, 3 for color
   , "sigma": [0, 50] // 15, 25, 50 for DnCNN | [0, 75] for FDnCNN and FFDNet
   , "sigma_test": 0  // 15, 25, 50 for DnCNN, FDnCNN and FFDNet, 0 for SR
 
@@ -21,18 +21,19 @@
     "train": {
       "name": "train_dataset"           // just name
       , "dataset_type": "sr"          // "dncnn" | "dnpatch" | "fdncnn" | "ffdnet" | "sr" | "srmd" | "dpsr" | "plain" | "plainpatch"
-      , "dataroot_H": "trainsets/IR100_sub_1500/HR"// path of H training dataset//DIV2K_sub/G//IR100_sub_1500/HR
-      , "dataroot_L": null              // path of L training dataset
+      , "dataroot_H": "/home/pamasi/deep_learning/ir/dataset_sr/dataset_CIDIS_sisr_x8/thermal/train/GT"          // path of H training dataset//DIV2K_sub/G//IR100_sub_1500/HR
+      , "dataroot_L": "/home/pamasi/deep_learning/ir/dataset_sr/dataset_CIDIS_sisr_x8/thermal/train/LR_x8"             // path of L training dataset
       , "H_size": 96                    // patch size 40 | 64 | 96 | 128 | 192
       , "dataloader_shuffle": true
       , "dataloader_num_workers": 8
       , "dataloader_batch_size": 32    // batch size 1 | 16 | 32 | 48 | 64 | 128
     }
+    // validation set, but naming is completely correct ...
     , "test": {
       "name": "test_dataset"            // just name
       , "dataset_type": "sr"            // "dncnn" | "dnpatch" | "fdncnn" | "ffdnet" | "sr" | "srmd" | "dpsr" | "plain" | "plainpatch"
-      , "dataroot_H": "testsets/results-C"   // path of H testing dataset
-      , "dataroot_L": null              // path of L testing dataset
+      , "dataroot_H": "/home/pamasi/deep_learning/ir/dataset_sr/dataset_CIDIS_sisr_x8/thermal/val/GT"   // path of H testing dataset
+      , "dataroot_L": "/home/pamasi/deep_learning/ir/dataset_sr/dataset_CIDIS_sisr_x8/thermal/val/LR_x8"             // path of L testing dataset
     }
   }
 
@@ -40,8 +41,8 @@
     "net_type": "msrresnet0"  // "dncnn" | "fdncnn" | "ffdnet" | "srmd" | "dpsr" | "msrresnet0" |  "msrresnet1" | "rrdb"
   ,  "en_net_type": "D_msrresnet0"
   ,  "enhance": "no_enhance" //"enhance" | "no_enhance"
-    , "in_nc": 3        // input channel number
-    , "out_nc": 3       // ouput channel number
+    , "in_nc": 1       // input channel number
+    , "out_nc": 1       // output channel number
     , "nc": 64          // 96 for DPSR, 128 for SRMD, 64 for DnCNN and MSRResNet
     , "nb": 16          // 12 for "srmd", 15 for "ffdnet", 20 for "dncnn", 16 for "srresnet" and "dpsr"
     , "gc": 32          // unused
@@ -58,7 +59,7 @@
 
   , "netD": {
     "net_type": "discriminator_vgg_96" // 92 "discriminator_vgg_192" | "discriminator_vgg_128" | "discriminator_vgg_96"
-    , "in_nc": 3
+    , "in_nc": 1
     , "act_mode": "BL"                 // "BL" means BN+LeakyReLU
     , "base_nc": 64
 

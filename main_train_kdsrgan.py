@@ -119,44 +119,6 @@ def main(json_path='options/train_kdsrgan.json'):
     
     model = net.ModelGAN(opt)
 
-    #######################################   Step 1   #############################################################
-    G_state_dict = torch.load('latest model/20000_G.pth')
-    # # D_state_dict = torch.load('latest model/115000_D.pth')
-    # #
-    from collections import OrderedDict
-    #
-    G_new_state_dict = OrderedDict()
-    # D_new_state_dict = OrderedDict()
-    for k, v in G_state_dict.items():
-        name = str('module.' + k[0:])
-        #######################################   Step 2   #############################################################
-        # if k != 'KD.c1_d.0.weight' and k != 'KD.c1_d.0.bias' and k != 'KD.c1_d.1.weight' and k != 'KD.c1_d.1.bias' and k != 'KD.c1_r.0.weight' and k != 'KD.c1_r.0.bias' and k != 'KD.c1_r.1.weight'and k != 'KD.c1_r.1.bias'and k != 'KD.c2_d.0.weight'and k != 'KD.c2_d.0.bias'and k != 'KD.c2_d.1.weight'and k != 'KD.c2_d.1.bias'and k != 'KD.c2_r.0.weight'and k != 'KD.c2_r.0.bias'and k != 'KD.c2_r.1.weight'and k != 'KD.c2_r.1.bias'and k != 'KD.c3_d.0.weight'and k != 'KD.c3_d.0.bias'and k != 'KD.c3_d.1.weight'and k != 'KD.c3_d.1.bias'and k != 'KD.c3_r.0.weight'and k != 'KD.c3_r.0.bias'and k != 'KD.c3_r.1.weight'and k != 'KD.c3_r.1.bias'and k != 'KD.c4.0.weight'and k != 'KD.c4.0.bias'and k != 'KD.c4.1.weight'and k != 'KD.c4.1.bias'and k != 'KD.c5.0.weight'and k != 'KD.c5.0.bias'and k != 'KD.c5.1.weight'and k != 'KD.c5.1.bias'and k != 'KD.esa.conv1.0.weight'and k != ' KD.esa.conv1.0.bias'and k != 'KD.esa.conv1.1.weight'and k != 'KD.esa.conv1.1.bias'and k != 'KD.esa.conv_f.0.weight'and k != 'KD.esa.conv_f.0.bias'and k != ' KD.esa.conv_f.1.weight'and k != 'KD.esa.conv_f.1.bias'and k != 'KD.esa.conv_max.0.weight'and k != 'KD.esa.conv_max.0.bias'and k != 'KD.esa.conv_max.1.weight'and k != 'KD.esa.conv_max.1.bias'and k != 'KD.esa.conv2.0.weight'and k != 'KD.esa.conv2.0.bias'and k != 'KD.esa.conv2.1.weight'and k != 'KD.esa.conv2.1.bias'and k != 'KD.esa.conv3.0.weight'and k != 'KD.esa.conv3.0.bias'and k != 'KD.esa.conv3.1.weight'and k != 'KD.esa.conv3.1.bias'and k != 'KD.esa.conv3_.0.weight'and k != 'KD.esa.conv3_.0.bias'and k != 'KD.esa.conv3_.1.weight'and k != 'KD.esa.conv3_.1.bias'and k != 'KD.esa.conv4.0.weight'and k != 'KD.esa.conv4.0.bias'and k != 'KD.esa.conv4.1.weight'and k != 'KD.esa.conv4.1.bias'and k != 'tail.1.weight'and k != 'tail.1.bias'and k != 'tail.4.weight'and k != 'tail.4.bias'and k != 'tail.6.weight'and k != 'tail.6.bias'and k != 'tail.8.weight'and k != 'copress.weight'and k != 'copress.bias':
-        ###############################################   Step 3   ##########################################################
-        # if k != 'tail.1.weight'and k != 'tail.1.bias'and k != 'tail.4.weight'and k != 'tail.4.bias'and k != 'tail.6.weight'and k != 'tail.6.bias'and k != 'tail.8.weight'and k != 'copress.weight'and k != 'copress.bias':
-        #     v.requires_grad = False
-        #     G_new_state_dict[name] = v
-        # print(v.requires_grad)
-
-        if k != 'tail.8.weight' and k != 'copress.weight' and k != 'copress.bias':
-            v.requires_grad = False
-            G_new_state_dict[name] = v
-        # print(v.requires_grad)
-
-
-
-    model.netG.load_state_dict(G_new_state_dict, strict=False)  
-
-    # for k, v in D_state_dict.items():
-    #     name = str('module.' + k[0:]) 
-    #     D_new_state_dict[name] = v
-
-    # for k, v in G_state_dict.items():
-    #     name = str('module.'+k[0:] )
-    #     G_new_state_dict[name] = v
-    # #
-    # # model.netD.load_state_dict(D_new_state_dict, strict=True)
-    # model.netG.load_state_dict(G_new_state_dict, strict=False)
-
     model.init_train()
 
 
