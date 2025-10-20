@@ -2,3 +2,10 @@
 .jpg
 .png
 **__pycache__**
+superresolution/**
+*.json
+*.yaml
+*.bmp
+*.pth 
+*.log
+*.wandb

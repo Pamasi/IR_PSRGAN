@@ -18,7 +18,7 @@ class DatasetSR(data.Dataset):
         super(DatasetSR, self).__init__()
         self.opt = opt
         self.n_channels = opt['n_channels'] if opt['n_channels'] else 3
-        self.sf = opt['scale'] if opt['scale'] else 4
+        self.sf = opt['scale'] if opt['scale'] else 4 #default scale is 4
         self.patch_size = self.opt['H_size'] if self.opt['H_size'] else 96
         self.L_size = self.patch_size // self.sf
 

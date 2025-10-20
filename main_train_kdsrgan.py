@@ -18,6 +18,8 @@ from models.select_model import define_Model
 from torchvision import models
 from models import enhance_model_gan as net
 
+from utilss.common import config_wandb
+import wandb
 
 
 
@@ -63,10 +65,8 @@ def main(json_path='options/train_kdsrgan.json'):
     # ----------------------------------------
     # configure logger
     # ----------------------------------------
-    logger_name = 'train'
-    utils_logger.logger_info(logger_name, os.path.join(opt['path']['log'], logger_name+'.log'))
-    logger = logging.getLogger(logger_name)
-    logger.info(option.dict2str(opt))
+    wandb_run = config_wandb(opt)
+    
 
     # ----------------------------------------
     # seed
@@ -74,12 +74,12 @@ def main(json_path='options/train_kdsrgan.json'):
     seed = opt['train']['manual_seed']
     if seed is None:
         seed = random.randint(1, 10000)
-    logger.info('Random seed: {}'.format(seed))
+    
     random.seed(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
     torch.cuda.manual_seed_all(seed)
-
+    print(f'Training seed {seed}')
     '''
     # ----------------------------------------
     # Step--2 (creat dataloader)
@@ -94,7 +94,7 @@ def main(json_path='options/train_kdsrgan.json'):
         if phase == 'train':
             train_set = define_Dataset(dataset_opt)
             train_size = int(math.ceil(len(train_set) / dataset_opt['dataloader_batch_size']))
-            logger.info('Number of train images: {:,d}, iters: {:,d}'.format(len(train_set), train_size))
+            print('Number of train images: {:,d}, iters: {:,d}'.format(len(train_set), train_size))
             train_loader = DataLoader(train_set,
                                       batch_size=dataset_opt['dataloader_batch_size'],
                                       shuffle=dataset_opt['dataloader_shuffle'],
@@ -102,8 +102,8 @@ def main(json_path='options/train_kdsrgan.json'):
                                       drop_last=True,
                                       pin_memory=True)
         elif phase == 'test':
-            test_set = define_Dataset(dataset_opt)
-            test_loader = DataLoader(test_set, batch_size=1,
+            val_set = define_Dataset(dataset_opt)
+            val_loader = DataLoader(val_set, batch_size=1,
                                      shuffle=False, num_workers=1,
                                      drop_last=False, pin_memory=True)
         else:
@@ -121,19 +121,13 @@ def main(json_path='options/train_kdsrgan.json'):
 
     model.init_train()
 
-
-
-
-    logger.info(model.info_network())
-    logger.info(model.info_params())
-
     '''
     # ----------------------------------------
     # Step--4 (main training)
     # ----------------------------------------
     '''
-
-    for epoch in range(3000):  # keep running
+    n_val = len(val_loader)
+    for epoch in range(opt['train']['n_epoch']):  # keep running
         for i, train_data in enumerate(train_loader):
 
             current_step += 1
@@ -157,17 +151,22 @@ def main(json_path='options/train_kdsrgan.json'):
             # 4) training information
             # -------------------------------
             if current_step % opt['train']['checkpoint_print'] == 0:
-                logs = model.current_log()  # such as loss
-                message = '<epoch:{:3d}, iter:{:8,d}, lr:{:.3e}> '.format(epoch, current_step, model.current_learning_rate())
+                dict_log = {
+                    'train/lr': model.current_learning_rate(),
+
+                }
+
+                logs = model.current_log()  # such as loss               
                 for k, v in logs.items():  # merge log information into message
-                    message += '{:s}: {:.3e} '.format(k, v)
-                logger.info(message)
+                    dict_log[f'train/{k}'] = v
+          
+
+                wandb.log(dict_log)
 
             # -------------------------------
             # 5) save model
             # -------------------------------
             if current_step % opt['train']['checkpoint_save'] == 0:
-                logger.info('Saving the model.')
                 model.save(current_step)
 
             # -------------------------------
@@ -178,17 +177,16 @@ def main(json_path='options/train_kdsrgan.json'):
                 avg_psnr = 0.0
                 avg_ssim = 0.0
 
-                idx = 0
+                
 
-                for test_data in test_loader:
-                    idx += 1
-                    image_name_ext = os.path.basename(test_data['L_path'][0])
-                    img_name, ext = os.path.splitext(image_name_ext)
+                for val_data in val_loader:
+                    #image_name_ext = os.path.basename(val_data['L_path'][0])
+                    #img_name, ext = os.path.splitext(image_name_ext)
 
-                    img_dir = os.path.join(opt['path']['images'], img_name)
-                    util.mkdir(img_dir)
+                    #img_dir = os.path.join(opt['path']['images'], img_name)
+                    #util.mkdir(img_dir)
 
-                    model.feed_data(test_data)
+                    model.feed_data(val_data)
                     model.test()
 
                     visuals = model.current_visuals()
@@ -198,8 +196,8 @@ def main(json_path='options/train_kdsrgan.json'):
                     # -----------------------
                     # save estimated image E
                     # -----------------------
-                    save_img_path = os.path.join(img_dir, '{:s}_{:d}.png'.format(img_name, current_step))
-                    util.imsave(E_img, save_img_path)
+                    #save_img_path = os.path.join(img_dir, '{:s}_{:d}.png'.format(img_name, current_step))
+                    #util.imsave(E_img, save_img_path)
 
                     # -----------------------
                     # calculate PSNR & SSIM
@@ -207,20 +205,23 @@ def main(json_path='options/train_kdsrgan.json'):
                     current_psnr = util.calculate_psnr(E_img, H_img, border=border)
                     current_ssim = util.calculate_ssim(E_img, H_img, border=border)
 
-                    logger.info('{:->4d}--> {:>10s} | {:<4.4f}dB | {:<4.4f}'.format(idx, image_name_ext, current_psnr, current_ssim))
+                    #logger.info('{:->4d}--> {:>10s} | {:<4.4f}dB | {:<4.4f}'.format(idx, image_name_ext, current_psnr, current_ssim))
 
                     avg_psnr += current_psnr
                     avg_ssim += current_ssim
 
-                avg_psnr = avg_psnr / idx
-                avg_ssim = avg_ssim / idx
+                avg_psnr /= n_val
+                avg_ssim /= n_val
 
                 # testing log
-                logger.info('<epoch:{:3d}, iter:{:8,d}, Average PSNR : {:<.2f}dB, Average PSNR : {:<.4f}\n'.format(epoch, current_step, avg_psnr, avg_ssim))
-
-    logger.info('Saving the final model.')
-    model.save('DIV2Ksub_1_RRDB+KDB+Sample_8000')
-    logger.info('End of training.')
+                dict_log ={
+                    'val/avg_psnr':  avg_psnr,
+                    'val/avg_ssim':avg_ssim
+                }
+          
+    print('Saving the final model.')
+    model.save('ir_psrgan')
+    print('End of training.')
 
 
 if __name__ == '__main__':
