@@ -1,9 +1,9 @@
 {
-  "task": "0529msrresnet_gan_kd_x2_s4_for nc128 le-4 IR 20000" //
+  "task": "prsrgan_v2" //
   , "model": "gan" // "gan"
   , "gpu_ids": [0]
 
-  , "scale": 2       // broadcast to "netG" if SISR
+  , "scale": 4      // broadcast to "netG" if SISR
   , "n_channels": 1  // broadcast to "datasets", 1 for grayscale, 3 for color
   , "sigma": [0, 50] // 15, 25, 50 for DnCNN | [0, 75] for FDnCNN and FFDNet
   , "sigma_test": 0  // 15, 25, 50 for DnCNN, FDnCNN and FFDNet, 0 for SR
@@ -22,7 +22,7 @@
       "name": "train_dataset"           // just name
       , "dataset_type": "sr"          // "dncnn" | "dnpatch" | "fdncnn" | "ffdnet" | "sr" | "srmd" | "dpsr" | "plain" | "plainpatch"
       , "dataroot_H": "/home/pamasi/deep_learning/ir/dataset_sr/dataset_CIDIS_sisr_x8/thermal/train/GT"          // path of H training dataset//DIV2K_sub/G//IR100_sub_1500/HR
-      , "dataroot_L": "/home/pamasi/deep_learning/ir/dataset_sr/dataset_CIDIS_sisr_x8/thermal/train/LR_x8"             // path of L training dataset
+      , "dataroot_L": null         // path of L training dataset
       , "H_size": 96                    // patch size 40 | 64 | 96 | 128 | 192
       , "dataloader_shuffle": true
       , "dataloader_num_workers": 8
@@ -33,7 +33,7 @@
       "name": "test_dataset"            // just name
       , "dataset_type": "sr"            // "dncnn" | "dnpatch" | "fdncnn" | "ffdnet" | "sr" | "srmd" | "dpsr" | "plain" | "plainpatch"
       , "dataroot_H": "/home/pamasi/deep_learning/ir/dataset_sr/dataset_CIDIS_sisr_x8/thermal/val/GT"   // path of H testing dataset
-      , "dataroot_L": "/home/pamasi/deep_learning/ir/dataset_sr/dataset_CIDIS_sisr_x8/thermal/val/LR_x8"             // path of L testing dataset
+      , "dataroot_L": null // path of L testing dataset
     }
   }
 
@@ -46,7 +46,7 @@
     , "nc": 64          // 96 for DPSR, 128 for SRMD, 64 for DnCNN and MSRResNet
     , "nb": 16          // 12 for "srmd", 15 for "ffdnet", 20 for "dncnn", 16 for "srresnet" and "dpsr"
     , "gc": 32          // unused
-    , "ng": 2           // unused
+    , "ng": 4       // unused
     , "reduction" : 16  // unused
     , "act_mode": "R"   // "BR" for BN+ReLU | "R" for ReLU
     , "upsample_mode": "upconv"         // "pixelshuffle" | "convtranspose" | "upconv"
@@ -99,5 +99,7 @@
     , "checkpoint_test": 5000
     , "checkpoint_save": 5000
     , "checkpoint_print": 200
+    ,"manual_seed":23
+    ,"n_epoch": 4000
   }
 }

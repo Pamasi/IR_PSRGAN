@@ -9,3 +9,5 @@ superresolution/**
 *.pth 
 *.log
 *.wandb
+wandb/*
+options/*
