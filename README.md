@@ -22,11 +22,9 @@ Recent advances in single image super-resolution (SISR) demonstrate the power of
 ![vis](https://user-images.githubusercontent.com/23012102/132626774-299f9dc1-e2da-440f-8189-f39172601396.png)
 
 ## Requirements and dependencies
- * Python  3.7
- * Pytorch 0.4.1
- * CUDA Version 10.2
- * TITAN X (Pascal)
- * Win10
+ * Python  3.12
+ * Pytorch 2.2
+ * CUDA Version 12.1
 
 ## Dataset prepare
 
