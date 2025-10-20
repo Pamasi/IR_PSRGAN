@@ -127,8 +127,12 @@ def main(json_path='options/train_kdsrgan.json'):
     # ----------------------------------------
     '''
     n_val = len(val_loader)
-    for epoch in range(opt['train']['n_epoch']):  # keep running
-        for i, train_data in enumerate(train_loader):
+    n_train = len(train_loader)
+    for _ in range(opt['train']['n_epoch']):  # keep running
+
+        dict_log = {}
+       
+        for train_data in train_loader:
 
             current_step += 1
 
@@ -158,66 +162,69 @@ def main(json_path='options/train_kdsrgan.json'):
 
                 logs = model.current_log()  # such as loss               
                 for k, v in logs.items():  # merge log information into message
-                    dict_log[f'train/{k}'] = v
+                    if f'train/{k}' in dict_log:
+                        dict_log[f'train/{k}'] += v
+                    else:
+                        dict_log[f'train/{k}'] = v
           
-
-                wandb.log(dict_log)
-
+        for k, v in dict_log.items():
+            dict_log[f'train/{k}'] /=n_train
+        
+        wandb.log(dict_log)
+ 
             # -------------------------------
             # 5) save model
             # -------------------------------
-            if current_step % opt['train']['checkpoint_save'] == 0:
-                model.save(current_step)
+        if current_step % opt['train']['checkpoint_save'] == 0:
+            model.save(current_step)
 
-            # -------------------------------
-            # 6) testing
-            # -------------------------------
-            if current_step % opt['train']['checkpoint_test'] == 0:
+        # -------------------------------
+        # 6) testing
+        # -------------------------------
 
-                avg_psnr = 0.0
-                avg_ssim = 0.0
+        avg_psnr = 0.0
+        avg_ssim = 0.0
 
-                
 
-                for val_data in val_loader:
-                    #image_name_ext = os.path.basename(val_data['L_path'][0])
-                    #img_name, ext = os.path.splitext(image_name_ext)
+        for val_data in val_loader:
+            #image_name_ext = os.path.basename(val_data['L_path'][0])
+            #img_name, ext = os.path.splitext(image_name_ext)
 
-                    #img_dir = os.path.join(opt['path']['images'], img_name)
-                    #util.mkdir(img_dir)
+            #img_dir = os.path.join(opt['path']['images'], img_name)
+            #util.mkdir(img_dir)
 
-                    model.feed_data(val_data)
-                    model.test()
+            model.feed_data(val_data)
+            model.test()
 
-                    visuals = model.current_visuals()
-                    E_img = util.tensor2uint(visuals['E'])
-                    H_img = util.tensor2uint(visuals['H'])
+            visuals = model.current_visuals()
+            E_img = util.tensor2uint(visuals['E'])
+            H_img = util.tensor2uint(visuals['H'])
 
-                    # -----------------------
-                    # save estimated image E
-                    # -----------------------
-                    #save_img_path = os.path.join(img_dir, '{:s}_{:d}.png'.format(img_name, current_step))
-                    #util.imsave(E_img, save_img_path)
+            # -----------------------
+            # save estimated image E
+            # -----------------------
+            #save_img_path = os.path.join(img_dir, '{:s}_{:d}.png'.format(img_name, current_step))
+            #util.imsave(E_img, save_img_path)
 
-                    # -----------------------
-                    # calculate PSNR & SSIM
-                    # -----------------------
-                    current_psnr = util.calculate_psnr(E_img, H_img, border=border)
-                    current_ssim = util.calculate_ssim(E_img, H_img, border=border)
+            # -----------------------
+            # calculate PSNR & SSIM
+            # -----------------------
+            current_psnr = util.calculate_psnr(E_img, H_img, border=border)
+            current_ssim = util.calculate_ssim(E_img, H_img, border=border)
 
-                    #logger.info('{:->4d}--> {:>10s} | {:<4.4f}dB | {:<4.4f}'.format(idx, image_name_ext, current_psnr, current_ssim))
+            #logger.info('{:->4d}--> {:>10s} | {:<4.4f}dB | {:<4.4f}'.format(idx, image_name_ext, current_psnr, current_ssim))
 
-                    avg_psnr += current_psnr
-                    avg_ssim += current_ssim
+            avg_psnr += current_psnr
+            avg_ssim += current_ssim
 
-                avg_psnr /= n_val
-                avg_ssim /= n_val
+        avg_psnr /= n_val
+        avg_ssim /= n_val
 
-                # testing log
-                dict_log ={
-                    'val/avg_psnr':  avg_psnr,
-                    'val/avg_ssim':avg_ssim
-                }
+        # testing log
+        dict_log ={
+            'val/avg_psnr':  avg_psnr,
+            'val/avg_ssim':avg_ssim
+        }
           
     print('Saving the final model.')
     model.save('ir_psrgan')
