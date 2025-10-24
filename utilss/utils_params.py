@@ -87,7 +87,7 @@ def rgb2gray_net(net, only_input=True):
 
 if __name__ == '__main__':
     
-    net = torchvision.models.vgg19(pretrained=True)
+    net = torchvision.models.vgg19(weights=torchvision.models.VGG19_Weights.IMAGENET1K_V1)
     for k,v in net.features.named_parameters():
         if k=='0.weight':
             in_new_filter = v[:,0,:,:]*0.2989 + v[:,1,:,:]*0.587 + v[:,2,:,:]*0.114

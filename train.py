@@ -63,7 +63,7 @@ def main(json_path='options/train_kdsrgan.json'):
     opt = option.dict_to_nonedict(opt)
 
     # ----------------------------------------
-    # configure logger
+    # configure wandb
     # ----------------------------------------
     wandb_run = config_wandb(opt)
     
@@ -101,10 +101,10 @@ def main(json_path='options/train_kdsrgan.json'):
                                       num_workers=dataset_opt['dataloader_num_workers'],
                                       drop_last=True,
                                       pin_memory=True)
-        elif phase == 'test':
+        elif phase == 'val':
             val_set = define_Dataset(dataset_opt)
-            val_loader = DataLoader(val_set, batch_size=1,
-                                     shuffle=False, num_workers=1,
+            val_loader = DataLoader(val_set, batch_size=dataset_opt['dataloader_batch_size'],
+                                     shuffle=False, num_workers=dataset_opt['dataloader_num_workers'],
                                      drop_last=False, pin_memory=True)
         else:
             raise NotImplementedError("Phase [%s] is not recognized." % phase)
@@ -126,20 +126,16 @@ def main(json_path='options/train_kdsrgan.json'):
     # Step--4 (main training)
     # ----------------------------------------
     '''
-    n_val = len(val_loader)
-    n_train = len(train_loader)
+    n_batch_val = len(val_loader)
+    n_batch_train = len(train_loader)
     for _ in range(opt['train']['n_epoch']):  # keep running
 
-        dict_log = {}
+        epoch_log = {}
        
         for train_data in train_loader:
 
             current_step += 1
 
-            # -------------------------------
-            # 1) update learning rate
-            # -------------------------------
-            model.update_learning_rate(current_step)
 
             # -------------------------------
             # 2) feed patch pairs
@@ -154,23 +150,29 @@ def main(json_path='options/train_kdsrgan.json'):
             # -------------------------------
             # 4) training information
             # -------------------------------
-            if current_step % opt['train']['checkpoint_print'] == 0:
-                dict_log = {
-                    'train/lr': model.current_learning_rate(),
+            if 'train/lr' in epoch_log:
+                epoch_log['train/lr'] +=  model.current_learning_rate()
 
-                }
+            else:
+                epoch_log['train/lr'] = model.current_learning_rate()
 
-                logs = model.current_log()  # such as loss               
-                for k, v in logs.items():  # merge log information into message
-                    if f'train/{k}' in dict_log:
-                        dict_log[f'train/{k}'] += v
-                    else:
-                        dict_log[f'train/{k}'] = v
+         
+
+            logs_train = model.current_log()  # such as loss               
+            for k, v in logs_train.items():  # merge log information into message
+                if f'train/{k}' in epoch_log:
+                    epoch_log[f'train/{k}'] += v
+                else:
+                    epoch_log[f'train/{k}'] = v
           
-        for k, v in dict_log.items():
-            dict_log[f'train/{k}'] /=n_train
-        
-        wandb.log(dict_log)
+            # -------------------------------
+            # 1) update learning rate
+            # -------------------------------
+            model.update_learning_rate()
+
+        for k, v in epoch_log.items():
+            epoch_log[k] /=n_batch_train
+      
  
             # -------------------------------
             # 5) save model
@@ -179,13 +181,12 @@ def main(json_path='options/train_kdsrgan.json'):
             model.save(current_step)
 
         # -------------------------------
-        # 6) testing
+        # 6) validation
         # -------------------------------
-
         avg_psnr = 0.0
         avg_ssim = 0.0
 
-
+        
         for val_data in val_loader:
             #image_name_ext = os.path.basename(val_data['L_path'][0])
             #img_name, ext = os.path.splitext(image_name_ext)
@@ -194,7 +195,13 @@ def main(json_path='options/train_kdsrgan.json'):
             #util.mkdir(img_dir)
 
             model.feed_data(val_data)
+
+            # comparison of validation loss cuz measleading: 
+            # https://stats.stackexchange.com/questions/464845/a-meaning-significance-of-validation-loss-in-a-generative-adversarial-neural-net
             model.test()
+
+          
+
 
             visuals = model.current_visuals()
             E_img = util.tensor2uint(visuals['E'])
@@ -217,14 +224,17 @@ def main(json_path='options/train_kdsrgan.json'):
             avg_psnr += current_psnr
             avg_ssim += current_ssim
 
-        avg_psnr /= n_val
-        avg_ssim /= n_val
+        avg_psnr /= n_batch_val
+        avg_ssim /= n_batch_val
 
         # testing log
-        dict_log ={
-            'val/avg_psnr':  avg_psnr,
-            'val/avg_ssim':avg_ssim
-        }
+        epoch_log['val/avg_psnr'] = avg_psnr
+        epoch_log['val/avg_ssim'] = avg_ssim
+
+
+    
+        
+        wandb.log(epoch_log)
           
     print('Saving the final model.')
     model.save('ir_psrgan')
